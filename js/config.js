@@ -8,7 +8,8 @@
  * Firebase (passo a passo no arquivo LEIA-ME.md) e cole aqui os valores
  * do objeto "firebaseConfig" que o console do Firebase mostra.
  */
-const firebaseConfig = {
+window.OLHO_CONFIG = {
+  firebase: {
   apiKey: "AIzaSyCvEtSyo-c8TX52WWmK3IfmyGgVGv2Rb84",
   authDomain: "olho-na-mare.firebaseapp.com",
   projectId: "olho-na-mare",
