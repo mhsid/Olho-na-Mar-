@@ -1,0 +1,32 @@
+rules_version = '2';
+
+// Regras do banco de dados do Olho na Maré.
+// Qualquer pessoa pode LER e CRIAR marcações (sem login), mas ninguém pode
+// editar ou apagar pelo site. Para remover uma marcação indevida, use o
+// console do Firebase (Firestore Database > marcacoes > apagar documento).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /marcacoes/{id} {
+      allow read: if true;
+      allow create: if marcacaoValida(request.resource.data);
+      allow update, delete: if false;
+    }
+
+    function marcacaoValida(d) {
+      return d.keys().hasOnly(['lat', 'lng', 'tipo', 'intensidade', 'dataObservada', 'local', 'estado', 'descricao', 'criadoEm'])
+        && d.keys().hasAll(['lat', 'lng', 'tipo', 'intensidade', 'dataObservada', 'local', 'estado', 'descricao', 'criadoEm'])
+        // Coordenadas dentro do litoral nordestino
+        && d.lat is number && d.lat >= -18.5 && d.lat <= -0.5
+        && d.lng is number && d.lng >= -49 && d.lng <= -34.5
+        && d.tipo in ['mancha', 'pelotas', 'animal', 'outro']
+        && d.intensidade in ['leve', 'moderada', 'grave']
+        && d.estado in ['MA', 'PI', 'CE', 'RN', 'PB', 'PE', 'AL', 'SE', 'BA']
+        && d.dataObservada is string && d.dataObservada.matches('^20[0-9]{2}-[01][0-9]-[0-3][0-9]$')
+        && d.local is string && d.local.size() <= 120
+        && d.descricao is string && d.descricao.size() <= 500
+        // Data de registro definida pelo servidor (não dá para falsificar)
+        && d.criadoEm == request.time;
+    }
+  }
+}

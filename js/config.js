@@ -1,0 +1,24 @@
+/*
+ * Configuração do Olho na Maré
+ *
+ * Enquanto os campos do Firebase estiverem vazios, o site roda em
+ * "modo demonstração": as marcações ficam salvas só no navegador de quem marcou.
+ *
+ * Para que TODOS vejam as marcações de todos, crie um projeto gratuito no
+ * Firebase (passo a passo no arquivo LEIA-ME.md) e cole aqui os valores
+ * do objeto "firebaseConfig" que o console do Firebase mostra.
+ */
+window.OLHO_CONFIG = {
+  firebase: {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: ""
+  },
+  // Nome da coleção no Firestore (precisa bater com o firestore.rules)
+  colecao: "marcacoes",
+  // Tempo mínimo entre duas marcações do mesmo navegador (segundos)
+  intervaloEntreMarcacoes: 45
+};

@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Olho na Maré</title>
+  <meta name="description" content="Mapa colaborativo e anônimo de manchas de petróleo nas praias do litoral nordestino.">
+  <meta name="theme-color" content="#0b3d5c">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2C10 11 6 16 6 21a10 10 0 0 0 20 0c0-5-4-10-10-19z' fill='%23121417'/%3E%3Cpath d='M4 26c3 0 3-2 6-2s3 2 6 2 3-2 6-2 3 2 6 2' stroke='%2323a6d5' stroke-width='2.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="mapa" aria-label="Mapa do litoral nordestino"></div>
+
+  <!-- Barra superior: marca + busca (inspirada no Google Maps) -->
+  <header class="topo">
+    <form id="busca" class="busca" role="search" autocomplete="off">
+      <a class="marca" href="#" id="btn-sobre" title="Sobre o Olho na Maré">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2C10 11 6 16 6 21a10 10 0 0 0 20 0c0-5-4-10-10-19z" class="gota"/><path d="M4 26c3 0 3-2 6-2s3 2 6 2 3-2 6-2 3 2 6 2" class="onda"/></svg>
+      </a>
+      <label for="busca-texto" class="sr">Buscar praia ou cidade</label>
+      <input id="busca-texto" type="search" placeholder="Buscar praia ou cidade no Nordeste" maxlength="120">
+      <button type="submit" class="icone-btn" title="Buscar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      </button>
+    </form>
+    <ul id="busca-resultados" class="busca-resultados" hidden></ul>
+  </header>
+
+  <!-- Painel lateral (desktop) / gaveta inferior (celular) -->
+  <aside id="painel" class="painel">
+    <button id="painel-alca" class="painel-alca" type="button" aria-expanded="false" aria-controls="painel-corpo">
+      <span class="alca-barra" aria-hidden="true"></span>
+      <span id="resumo-curto">Carregando marcações…</span>
+    </button>
+    <div id="painel-corpo" class="painel-corpo">
+      <div class="painel-cab">
+        <h1>Olho na Maré</h1>
+        <p>Mapa colaborativo do óleo nas praias do Nordeste. Viu uma mancha? Marque no mapa. Não é preciso se identificar.</p>
+      </div>
+
+      <dl class="numeros">
+        <div><dt>Marcações</dt><dd id="n-total">0</dd></div>
+        <div><dt>Graves</dt><dd id="n-graves">0</dd></div>
+        <div><dt>Estados</dt><dd id="n-estados">0<small>/9</small></dd></div>
+      </dl>
+
+      <div class="filtros">
+        <div class="campo-linha">
+          <label for="f-estado">Estado</label>
+          <select id="f-estado"><option value="">Todos os 9 estados</option></select>
+        </div>
+        <div class="campo-linha">
+          <label for="f-periodo">Período</label>
+          <select id="f-periodo">
+            <option value="0">Desde o início</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" >Últimos 30 dias</option>
+            <option value="365">Último ano</option>
+          </select>
+        </div>
+        <fieldset class="chips" id="f-intensidade">
+          <legend>Intensidade</legend>
+          <label class="chip chip-leve"><input type="checkbox" value="leve" checked><span>Leve</span></label>
+          <label class="chip chip-moderada"><input type="checkbox" value="moderada" checked><span>Moderada</span></label>
+          <label class="chip chip-grave"><input type="checkbox" value="grave" checked><span>Grave</span></label>
+        </fieldset>
+      </div>
+
+      <div class="lista-cab">
+        <h2>Registros recentes</h2>
+        <button id="btn-csv" type="button" class="link-btn">Baixar planilha (CSV)</button>
+      </div>
+      <ol id="lista" class="lista"></ol>
+      <p id="lista-vazia" class="vazio" hidden>
+        Nenhuma marcação com esses filtros. Toque em <strong>Marcar vazamento</strong> para registrar a primeira.
+      </p>
+    </div>
+  </aside>
+
+  <!-- Controles flutuantes -->
+  <div class="controles">
+    <button id="btn-camada" type="button" class="camada-btn" title="Trocar para satélite">
+      <span class="camada-mini" aria-hidden="true"></span>
+      <span id="camada-rotulo">Satélite</span>
+    </button>
+    <button id="btn-local" type="button" class="redondo" title="Ir para minha localização">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+    </button>
+  </div>
+
+  <button id="btn-marcar" type="button" class="fab">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C8 8 5 11.5 5 15a7 7 0 0 0 14 0c0-3.5-3-7-7-13z"/><path d="M12 11v7M8.5 14.5h7" class="mais"/></svg>
+    Marcar vazamento
+  </button>
+
+  <div id="dica" class="dica" role="status" hidden>
+    <span>Toque no ponto da praia onde está o óleo.</span>
+    <button id="dica-cancelar" type="button" class="link-btn">Cancelar</button>
+  </div>
+
+  <!-- Formulário de marcação -->
+  <section id="form-painel" class="form-painel" aria-labelledby="form-titulo" hidden>
+    <form id="form-marcacao" novalidate>
+      <div class="form-cab">
+        <h2 id="form-titulo">Nova marcação</h2>
+        <button type="button" id="form-fechar" class="icone-btn" title="Fechar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <p class="coords" id="form-coords">—</p>
+      <p class="ajuda">Arraste o pino para ajustar a posição. Nenhum dado pessoal é coletado.</p>
+
+      <fieldset class="opcoes">
+        <legend>O que você viu?</legend>
+        <label><input type="radio" name="tipo" value="mancha" checked><span>Mancha ou placa de óleo na areia/água</span></label>
+        <label><input type="radio" name="tipo" value="pelotas"><span>Pelotas ou fragmentos de piche</span></label>
+        <label><input type="radio" name="tipo" value="animal"><span>Animal sujo de óleo</span></label>
+        <label><input type="radio" name="tipo" value="outro"><span>Outro sinal (cheiro, brilho na água…)</span></label>
+      </fieldset>
+
+      <fieldset class="chips">
+        <legend>Intensidade</legend>
+        <label class="chip chip-leve"><input type="radio" name="intensidade" value="leve"><span>Leve</span></label>
+        <label class="chip chip-moderada"><input type="radio" name="intensidade" value="moderada" checked><span>Moderada</span></label>
+        <label class="chip chip-grave"><input type="radio" name="intensidade" value="grave"><span>Grave</span></label>
+      </fieldset>
+
+      <div class="grade-2">
+        <div class="campo">
+          <label for="m-data">Data em que viu</label>
+          <input id="m-data" type="date" required min="2019-01-01">
+        </div>
+        <div class="campo">
+          <label for="m-estado">Estado</label>
+          <select id="m-estado" required><option value="">Escolha…</option></select>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="m-local">Praia / local</label>
+        <input id="m-local" type="text" maxlength="120" placeholder="Ex.: Praia de Itapuã, Salvador">
+      </div>
+
+      <div class="campo">
+        <label for="m-descricao">Descrição <small>(opcional)</small></label>
+        <textarea id="m-descricao" rows="3" maxlength="500" placeholder="Tamanho aproximado, extensão na areia, se há animais atingidos…"></textarea>
+        <small class="contador"><span id="m-contador">0</span>/500</small>
+      </div>
+
+      <div class="form-acoes">
+        <button type="button" id="form-cancelar" class="btn-sec">Cancelar</button>
+        <button type="submit" id="form-enviar" class="btn-pri">Registrar marcação</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Sobre -->
+  <div id="modal-sobre" class="modal" role="dialog" aria-modal="true" aria-labelledby="sobre-titulo" hidden>
+    <div class="modal-caixa">
+      <button type="button" class="icone-btn modal-fechar" data-fechar title="Fechar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <h2 id="sobre-titulo">Sobre o Olho na Maré</h2>
+      <p>Em 2019, manchas de petróleo cru chegaram a centenas de praias dos nove estados do Nordeste, e até hoje fragmentos ainda aparecem em alguns trechos. Este mapa é um projeto escolar de <strong>ciência cidadã</strong>: qualquer pessoa pode registrar onde viu óleo, sem login e sem informar nome, e-mail ou telefone.</p>
+      <h3>Como marcar</h3>
+      <ol>
+        <li>Toque em <strong>Marcar vazamento</strong>.</li>
+        <li>Toque no ponto exato da praia (dá para arrastar o pino depois).</li>
+        <li>Diga o que viu, a intensidade e a data, e toque em <strong>Registrar</strong>.</li>
+      </ol>
+      <h3>Intensidade</h3>
+      <ul class="legenda">
+        <li><span class="bola bola-leve"></span><strong>Leve:</strong> poucas pelotas ou manchas pequenas e espaçadas.</li>
+        <li><span class="bola bola-moderada"></span><strong>Moderada:</strong> várias manchas num trecho da praia.</li>
+        <li><span class="bola bola-grave"></span><strong>Grave:</strong> placas grandes, faixa contínua ou animais atingidos.</li>
+      </ul>
+      <h3>Segurança</h3>
+      <p>Não toque no óleo sem luvas e botas: ele contém substâncias tóxicas. Não tente limpar por conta própria. Avise a Defesa Civil ou o IBAMA (Linha Verde: <strong>0800 061 8080</strong>) e, se encontrar um animal atingido, não o devolva ao mar.</p>
+      <p class="pequeno">Mapa: © colaboradores do OpenStreetMap. Satélite: © Esri. Busca: Nominatim/OpenStreetMap.</p>
+    </div>
+  </div>
+
+  <div id="aviso-demo" class="aviso-demo" hidden>
+    <strong>Modo demonstração.</strong> As marcações ficam salvas só neste navegador. Para compartilhar com todos, configure o Firebase (veja o LEIA-ME).
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
