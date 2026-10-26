@@ -8,14 +8,13 @@
  * Firebase (passo a passo no arquivo LEIA-ME.md) e cole aqui os valores
  * do objeto "firebaseConfig" que o console do Firebase mostra.
  */
-window.OLHO_CONFIG = {
-  firebase: {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    storageBucket: "",
-    messagingSenderId: "",
-    appId: ""
+const firebaseConfig = {
+  apiKey: "AIzaSyCvEtSyo-c8TX52WWmK3IfmyGgVGv2Rb84",
+  authDomain: "olho-na-mare.firebaseapp.com",
+  projectId: "olho-na-mare",
+  storageBucket: "olho-na-mare.firebasestorage.app",
+  messagingSenderId: "1095634758258",
+  appId: "1:1095634758258:web:be2022964c9912d126b0eb"
   },
   // Nome da coleção no Firestore (precisa bater com o firestore.rules)
   colecao: "marcacoes",
